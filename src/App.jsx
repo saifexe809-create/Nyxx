@@ -6,13 +6,13 @@ const supabase = createClient(
   'sb_publishable_mJ9ev3P4Sjb0bcLSC2xlzQ_MxeemYEp'
 );
 
-const ADMIN_SECRET = 'nyx123'; // نفس كلمة السر
+const ADMIN_SECRET = 'nyx123'; 
 
 export default function App() {
   const [secret, setSecret] = useState('');
   const [msg, setMsg] = useState('');
   const [key, setKey] = useState('');
-  const [duration, setDuration] = useState('1d');
+  const [duration, setDuration] = useState('10m');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,16 +28,27 @@ export default function App() {
     if (!handleAuth()) return;
     setLoading(true);
     const newKey = 'NYX-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // حساب الوقت بناءً على الاختيار
     let expires = null;
     if (duration !== 'forever') {
       expires = new Date();
-      expires.setDate(expires.getDate() + parseInt(duration));
+      const amount = parseInt(duration);
+      if (duration.endsWith('m')) {
+        expires.setMinutes(expires.getMinutes() + amount);
+      } else if (duration.endsWith('h')) {
+        expires.setHours(expires.getHours() + amount);
+      } else if (duration.endsWith('d')) {
+        expires.setDate(expires.getDate() + amount);
+      }
     }
+    
     const { error } = await supabase.from('keys').insert({
       key_code: newKey,
       expires_at: expires ? expires.toISOString() : null,
       is_active: true
     });
+    
     setLoading(false);
     if (error) setMsg('Error: ' + error.message);
     else setMsg(`✅ Key: ${newKey} (${duration})`);
@@ -81,6 +92,10 @@ export default function App() {
       <div style={{ border: '1px solid #d4af64', padding: 20, borderRadius: 12, marginBottom: 20, background: '#1a1a1a' }}>
         <h3 style={{ marginTop: 0 }}>🔑 Generate Key</h3>
         <select value={duration} onChange={e => setDuration(e.target.value)} style={{ padding: 12, marginRight: 10, borderRadius: 8, background: '#222', color: '#fff', border: '1px solid #333', width: '100%', marginBottom: 10 }}>
+          <option value="10m">10 Minutes</option>
+          <option value="1h">1 Hour</option>
+          <option value="2h">2 Hours</option>
+          <option value="4h">4 Hours</option>
           <option value="1d">1 Day</option>
           <option value="3d">3 Days</option>
           <option value="7d">7 Days</option>
